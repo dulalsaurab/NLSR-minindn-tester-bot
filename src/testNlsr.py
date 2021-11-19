@@ -58,8 +58,7 @@ class TestNLSR(object):
                 # Run two more times if test fails
                 i = 0
                 while (i < 3):
-                    print "Running minindn test {}".format(test_name)
-                    print test_name
+                    print ("Running minindn test {}".format(test_name))
                     if i == 0:
                         self.exp_names.append(test_name)
                     proc = subprocess.Popen(exp[1].split())
@@ -88,16 +87,16 @@ class TestNLSR(object):
             return 1
         code, test = self.run_tests()
         if code != 0:
-            print "Test {} failed!".format(test)
+            print ("Test {} failed!".format(test))
             self.message += '\n\n'.join(self.exp_names[:len(self.exp_names) - 1])
             self.message += "\n\nNLSR tester bot: Test {} failed!".format(test)
             self.score = -1
             return 1
         else:
-            print "All tests passed!"
+            print ("All tests passed!")
             self.message = "NLSR tester bot: \n\nAll tests passed! \n\n"
             self.message += '\n\n'.join(self.exp_names)
-            print self.message
+            print (self.message)
             self.score = 1
         return 0
 
@@ -116,13 +115,13 @@ class TestNLSR(object):
         changes = self.rest.get("changes/?q=status:open+project:NLSR+branch:master+is:mergeable+label:verified+label:Verified-Integration=0")
         #changes = self.rest.get("changes/?q=4549")
 
-        print("changes", changes)
+        print("changes: {}".format(changes))
 
         # iterate over testable changes
         for change in changes:
-            print "Checking patch: {}".format(change['subject'])
+            print ("Checking patch: {}".format(change['subject']))
             change_id = change['change_id']
-            print change_id
+            print ("change-id: ", change_id)
             change_num = change['_number']
 
             current_rev = self.rest.get("/changes/?q={}&o=CURRENT_REVISION".format(change_num))
@@ -131,37 +130,36 @@ class TestNLSR(object):
             for item in tmp:
                 patch = tmp[item]['_number']
                 ref = tmp[item]['ref']
-            print patch
-            print ref
+            print ("patch: {}, ref: {}".format(patch, ref))
 
             # update source
             if self.update_dep() != 0:
-                print "Unable to compile and install ndn-cxx, NFD, NLSR!"
+                print ("Unable to compile and install ndn-cxx, NFD, NLSR!")
                 self.rev.set_message("NLSR tester bot: Unable to compile dependencies!")
                 self.rev.add_labels({'Verified-Integration': 0})
             else:
-                print "Pulling NLSR patch to a new branch..."
+                print ("Pulling NLSR patch to a new branch...")
                 self.nlsr_src.checkout_new_branch(change_id)
                 self.nlsr_src.pull_from_gerrit("{}/NLSR".format(self.url), ref)
 
                 # Check if there has been a change in cpp, hpp, or wscript files
                 if self.nlsr_src.has_code_changes():
                     # Test the change
-                    print "Testing NLSR patch"
+                    print ("Testing NLSR patch")
                     self.test_nlsr()
-                    print "Commenting"
+                    print ("Commenting")
                     self.rev.set_message(self.message)
                     self.rev.add_labels({'Verified-Integration': self.score})
                 else:
-                    print "No change in code"
+                    print ("No change in code")
                     self.rev.set_message("NLSR tester bot: No change in code, skipped testing!")
                     self.rev.add_labels({'Verified-Integration': 1})
                 self.nlsr_src.clean_up(change_id)
 
-            print self.rev
+            print (self.rev)
             self.rest.review(change_id, patch, self.rev)
 
-            print "\n--------------------------------------------------------\n"
+            print ("\n--------------------------------------------------------\n")
             time.sleep(60)
 
 if __name__ == "__main__":

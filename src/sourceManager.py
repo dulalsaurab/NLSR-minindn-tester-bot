@@ -5,22 +5,20 @@ class SourceManager(object):
     """ Source Update Manager class """
 
     def __init__(self, repoDir):
-    	NDN_GIT = "https://github.com/named-data/"
+      NDN_GIT = "https://github.com/named-data/"
+      self.repoDir = repoDir
+      self.repoName = repoDir.split("/")[len(repoDir.split("/"))-1]
+      print (self.repoName)
+      
+      if not os.path.isdir(repoDir):
+        call("git clone --depth 1 {}/{} {}".format(NDN_GIT, self.repoName, self.repoDir).split())
 
-    	self.repoDir = repoDir
-
-        self.repoName = repoDir.split("/")[len(repoDir.split("/"))-1]
-        print(self.repoName)
-
-        if not os.path.isdir(repoDir):
-            call("git clone --depth 1 {}/{} {}".format(NDN_GIT, self.repoName, self.repoDir).split())
-
-        if self.repoName == "NFD":
-            self.configCmd = "./waf configure --without-websocket"
-        else:
-            self.configCmd = "./waf configure"
-        self.compileCmd = "./waf -j2"
-        self.installCmd = "./waf install"
+      if self.repoName == "NFD":
+        self.configCmd = "./waf configure --without-websocket"
+      else:
+        self.configCmd = "./waf configure"
+      self.compileCmd = "./waf -j2"
+      self.installCmd = "./waf install"
 
     def scall(self, cmd):
         return call(cmd.split(), cwd = self.repoDir)
@@ -61,7 +59,7 @@ class SourceManager(object):
 
     def clean_up(self, branchName):
         """ Clean up git"""
-        print "Cleaning NLSR git branch"
+        print ("Cleaning NLSR git branch")
         self.scall("git checkout master")
         self.delete_branch(branchName)
 
